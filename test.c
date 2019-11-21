@@ -8,9 +8,9 @@ main(void) {
 	tline * line;
 	int i,j;
 
-	printf("==> ");	
+	printf("==> ");
 	while (fgets(buf, 1024, stdin)) {
-		
+
 		line = tokenize(buf);
 		if (line==NULL) {
 			continue;
@@ -26,14 +26,14 @@ main(void) {
 		}
 		if (line->background) {
 			printf("comando a ejecutarse en background\n");
-		} 
+		}
 		for (i=0; i<line->ncommands; i++) {
 			printf("orden %d (%s):\n", i, line->commands[i].filename);
 			for (j=0; j<line->commands[i].argc; j++) {
 				printf("  argumento %d: %s\n", j, line->commands[i].argv[j]);
 			}
 		}
-		printf("==> ");	
+		printf("==> ");
 	}
 	return 0;
 }
