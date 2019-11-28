@@ -1,0 +1,4 @@
+Entrada estandar
+0 entrada estandar - stdin
+
+dup2()
