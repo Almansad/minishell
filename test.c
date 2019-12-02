@@ -8,7 +8,7 @@
 #include "parser.h"
 #include <fcntl.h>
 
-int ficheroE, ficheroS;
+int ficheroE, ficheroS, ficheroErr;
 int** creatPipes(int N);
 void closePipes(int ** pipes, int i, int N);
 void comandCD(tline * line);
@@ -29,7 +29,7 @@ main(void) {
 			continue;
 		}
 		if (line->redirect_input != NULL) {
-			printf("redirección de entrada: %s\n", line->redirect_input);
+			//printf("redirección de entrada: %s\n", line->redirect_input);
 			ficheroE = open(line->redirect_input, O_RDONLY);
 			if (ficheroE == -1) {
 					fprintf(stderr,"%i: Error. Fallo al abrir el fichero de redirección de entrada\n", ficheroE);
@@ -37,7 +37,7 @@ main(void) {
 				}
 		}
 		if (line->redirect_output != NULL) {
-			printf("redirección de salida: %s\n", line->redirect_output);
+			//printf("redirección de salida: %s\n", line->redirect_output);
 			ficheroS = open(line -> redirect_output, O_WRONLY | O_CREAT | O_TRUNC , 0600);
 			if (ficheroS == -1) {
 				fprintf(stderr,"%i: Error. Fallo al abrir el fichero de redirección de salida\n", ficheroS);
@@ -45,7 +45,11 @@ main(void) {
 			}
 		}
 		if (line->redirect_error != NULL) {
-			printf("redirección de error: %s\n", line->redirect_error);
+			ficheroErr = open(line -> redirect_error, O_WRONLY | O_CREAT | O_TRUNC , 0600);
+			if (ficheroErr == -1) {
+				fprintf(stderr,"%i: Error. Fallo al abrir el fichero de error\n", ficheroErr);
+				continue;
+			}
 		}
 		if (line->background) {
 			printf("comando a ejecutarse en background\n");
@@ -132,6 +136,9 @@ void comands(tline * line) {
 					if(line->redirect_output != NULL){// Si solo hay uno y salida por fichero
 							dup2(ficheroS, 1);
 					}
+					if(line->redirect_error != NULL){// Si solo hay uno y salida por fichero
+							dup2(ficheroErr, 1);
+					}
 				}else{
 					dup2(pipes[i+1][1],1);
 				}
@@ -142,6 +149,10 @@ void comands(tline * line) {
 				if(line->redirect_output != NULL){// Si solo hay uno y salida por fichero
 						dup2(ficheroS, 1);
 				}
+				if(line->redirect_error != NULL){// Si solo hay uno y salida por fichero
+						dup2(ficheroErr, 1);
+				}
+
 
 			}else{
 				dup2(pipes[i+1][1],1);
