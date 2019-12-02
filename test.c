@@ -8,7 +8,7 @@
 #include "parser.h"
 #include <fcntl.h>
 
-int ficheroE;
+int ficheroE, ficheroS;
 int** creatPipes(int N);
 void closePipes(int ** pipes, int i, int N);
 void comandCD(tline * line);
@@ -38,6 +38,11 @@ main(void) {
 		}
 		if (line->redirect_output != NULL) {
 			printf("redirección de salida: %s\n", line->redirect_output);
+			ficheroS = open(line -> redirect_output, O_WRONLY | O_CREAT | O_TRUNC , 0600);
+			if (ficheroS == -1) {
+				fprintf(stderr,"%i: Error. Fallo al abrir el fichero de redirección de salida\n", ficheroS);
+				continue;
+			}
 		}
 		if (line->redirect_error != NULL) {
 			printf("redirección de error: %s\n", line->redirect_error);
@@ -120,16 +125,24 @@ void comands(tline * line) {
 				}
 
 
-				if(line->ncommands == 1){
+
+				if(line->ncommands == 1){ //Si solo hay un comando
 					close(pipes[i+1][1]);
+
+					if(line->redirect_output != NULL){// Si solo hay uno y salida por fichero
+							dup2(ficheroS, 1);
+					}
 				}else{
 					dup2(pipes[i+1][1],1);
 				}
 			}else if(i == numPipes-2){//EL ultimo
 				// printf("%d-Cierro la pipe %d =>1\n",i,i+1);
 				close(pipes[i+1][1]);
-
 				dup2(pipes[i][0],0);
+				if(line->redirect_output != NULL){// Si solo hay uno y salida por fichero
+						dup2(ficheroS, 1);
+				}
+
 			}else{
 				dup2(pipes[i+1][1],1);
 				dup2(pipes[i][0],0);
