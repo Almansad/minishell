@@ -26,16 +26,18 @@ main(void) {
 
 		line = tokenize(buf);
 		if (line==NULL) {
+			printf("%s==> ",ruta);
 			continue;
 		}
 		if (line->redirect_input != NULL) {
-			//printf("redirección de entrada: %s\n", line->redirect_input);
 			ficheroE = open(line->redirect_input, O_RDONLY);
 			if (ficheroE == -1) {
 					fprintf(stderr,"%i: Error. Fallo al abrir el fichero de redirección de entrada\n", ficheroE);
+					printf("%s==> ",ruta);
 					continue;
 				}
-		}
+		}pidHijos = malloc(line->ncommands * sizeof(pid));
+	//Creando pipes
 		if (line->redirect_output != NULL) {
 			//printf("redirección de salida: %s\n", line->redirect_output);
 			ficheroS = open(line -> redirect_output, O_WRONLY | O_CREAT | O_TRUNC , 0600);
@@ -129,8 +131,7 @@ void comands(tline * line) {
 				}
 
 
-
-				if(line->ncommands == 1){ //Si solo hay un comando
+				if(line->ncommands == 1){// Si es un solo un comando
 					close(pipes[i+1][1]);
 
 					if(line->redirect_output != NULL){// Si solo hay uno y salida por fichero
@@ -158,10 +159,11 @@ void comands(tline * line) {
 				dup2(pipes[i+1][1],1);
 				dup2(pipes[i][0],0);
 			}
+			numPipes = line->ncommands+1;
 
 			//Ejecutando comando hijo
 			execv(line->commands[i].filename, line->commands[i].argv);
-			fprintf(stderr, "ERROR,No se pudo ejecutar el comando %s\n" , strerror(errno));
+			fprintf(stderr, "%s, no se encuentra el mandato\n" , line->commands[i].filename);
 			exit(1);
 		}else{//Padre
 			// printf("Soy el padre voy a esperar al hijo %d\n",pid);
