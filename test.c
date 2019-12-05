@@ -9,7 +9,7 @@
 #include <fcntl.h>
 
 int ficheroE, ficheroS, ficheroErr;
-int** creatPipes(int N);
+int** createPipes(int N);
 void closePipes(int ** pipes, int i, int N);
 void comandCD(tline * line);
 void comands(tline * line);
@@ -21,27 +21,26 @@ main(void) {
 	char * ruta;
 	ruta = getcwd(ruta,1024);
 
-	printf("%s==> ",ruta);
+	printf("%s~msh> ",ruta);
 	while (fgets(buf, 1024, stdin)) {
 
 		line = tokenize(buf);
 		if (line==NULL) {
-			printf("%s==> ",ruta);
+			printf("%s~msh> ",ruta);
 			continue;
 		}
 		if (line->redirect_input != NULL) {
 			ficheroE = open(line->redirect_input, O_RDONLY);
 			if (ficheroE == -1) {
 					fprintf(stderr,"%i: Error. Fallo al abrir el fichero de redirección de entrada\n", ficheroE);
-					printf("%s==> ",ruta);
+					printf("%s~msh> ",ruta);
 					continue;
 				}
-		}pidHijos = malloc(line->ncommands * sizeof(pid));
-	//Creando pipes
+		}
 		if (line->redirect_output != NULL) {
 			//printf("redirección de salida: %s\n", line->redirect_output);
 			ficheroS = open(line -> redirect_output, O_WRONLY | O_CREAT | O_TRUNC , 0600);
-			if (ficheroS == -1) {
+			if (ficheroS == -1) {%s~msh>
 				fprintf(stderr,"%i: Error. Fallo al abrir el fichero de redirección de salida\n", ficheroS);
 				continue;
 			}
@@ -57,17 +56,18 @@ main(void) {
 			printf("comando a ejecutarse en background\n");
 		}
 		if (line->ncommands != 0) {
-			if(strcmp(line->commands[0].argv[0],"cd") == 0){
+			if(strcmp(line->commands[0].argv[0],"cd") == 0){%s~msh>
 				comandCD(line);
 				ruta = getcwd(ruta,1024);
 			}else {
 				comands(line);
 			}
 		}
-		printf("%s==> ",ruta);
+		printf("%s~msh> ",ruta);
 	}
 }
-int** creatPipes(int N) {
+// Creador de pipes
+int** createPipes(int N) {
 	int **pipes;
 	pipes = (int **) malloc((N) * sizeof(int *));
 	for(int p=0; p<N; p++) {
@@ -78,41 +78,41 @@ int** creatPipes(int N) {
 	}
 	return pipes;
 }
+// Cierra las pipes que no hacen falta segun el proceso
 void closePipes(int ** pipes, int i, int N) {
 		for (int c = 0; c < N; c++) {
 			if(c != i ) {
 				close(pipes[c][0]);//cierro las salidas de los pipes menos la que puede que utilize
-				// printf("%d-Cierro la pipe %d =>0\n",i,c);
 			}
 			if (c != (i+1)) {
 				close(pipes[c][1]);//cierro las entradas de los pipes menos la que puede que utilize
-				// printf("%d-Cierro la pipe %d =>1\n",i,c);
 			}
 		}
 }
+//Conmando cd para cambiar de directorio
 void comandCD(tline * line){
 		if (line->commands[0].argv[1] == NULL) { //y no tiene argumentos
 			chdir(getenv("HOME")); //nos lleva a HOME
 		}
-
 		else {
 			int error = chdir(line->commands[0].argv[1]); //si tiene argumentos nos lleva al destino solicitado
-
 			if (error == -1) { //a menos que no exista
 				printf("Lo siento pero la ruta no existe: %s \n", line->commands[0].argv[1]);
 			}
 		}
 }
+//Ejeceuta n comandos uniendo las entradas de los comandos con pipes
 void comands(tline * line) {
 	pid_t *pidHijos;
-	pid_t  pid;
+	pid_t  pid;		pidHijos = malloc(line->ncommands * sizeof(pid));
+
 	int i,j,numPipes;
 
 
 	pidHijos = malloc(line->ncommands * sizeof(pid));
 	//Creando pipes
 	numPipes = line->ncommands+1;
-	int **pipes = creatPipes(numPipes);
+	int **pipes = createPipes(numPipes);
 	for (i=0; i<line->ncommands; i++) {
 		//Creando procesos
 		pid = fork();
@@ -138,20 +138,19 @@ void comands(tline * line) {
 							dup2(ficheroS, 1);
 					}
 					if(line->redirect_error != NULL){// Si solo hay uno y salida por fichero
-							dup2(ficheroErr, 1);
+							dup2(ficheroErr, 2);
 					}
-				}else{
+				} else{
 					dup2(pipes[i+1][1],1);
 				}
 			}else if(i == numPipes-2){//EL ultimo
-				// printf("%d-Cierro la pipe %d =>1\n",i,i+1);
 				close(pipes[i+1][1]);
 				dup2(pipes[i][0],0);
-				if(line->redirect_output != NULL){// Si solo hay uno y salida por fichero
+				if(line->redirect_output != NULL){// salida por fichero
 						dup2(ficheroS, 1);
 				}
-				if(line->redirect_error != NULL){// Si solo hay uno y salida por fichero
-						dup2(ficheroErr, 1);
+				if(line->redirect_error != NULL){// salida de error %s~msh>por fichero
+						dup2(ficheroErr, 2);
 				}
 
 
@@ -166,7 +165,6 @@ void comands(tline * line) {
 			fprintf(stderr, "%s, no se encuentra el mandato\n" , line->commands[i].filename);
 			exit(1);
 		}else{//Padre
-			// printf("Soy el padre voy a esperar al hijo %d\n",pid);
 			pidHijos[i] = pid;
 		}
 	}
